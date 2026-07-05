@@ -1,0 +1,41 @@
+<%@ page contentType="text/html;charset=UTF-8" language="java" pageEncoding="UTF-8" %>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
+<c:set var="ctx" value="${pageContext.request.contextPath}"/>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>${empty pageTitle ? '后台管理' : pageTitle} · 云栖酒店</title>
+    <link rel="stylesheet" href="${ctx}/static/css/style.css">
+    <script src="${ctx}/static/js/echarts.min.js"></script>
+</head>
+<body>
+<div class="admin-body">
+    <aside class="sidebar">
+        <div class="logo">云栖酒店<span class="en">MANAGEMENT</span></div>
+        <nav>
+            <div class="group">概览</div>
+            <a href="${ctx}/admin/dashboard" class="${active=='dashboard'?'active':''}">仪表盘</a>
+            <a href="${ctx}/admin/stats" class="${active=='stats'?'active':''}">数据统计</a>
+            <div class="group">运营管理</div>
+            <a href="${ctx}/admin/reservations" class="${active=='reservations'?'active':''}">订单管理</a>
+            <a href="${ctx}/admin/rooms" class="${active=='rooms'?'active':''}">房间管理</a>
+            <a href="${ctx}/admin/types" class="${active=='types'?'active':''}">房型管理</a>
+            <div class="group">其它</div>
+            <a href="${ctx}/admin/users" class="${active=='users'?'active':''}">会员管理</a>
+            <a href="${ctx}/admin/analysis" class="${active=='analysis'?'active':''}">AI 经营分析</a>
+        </nav>
+    </aside>
+    <div class="admin-main">
+        <div class="admin-top">
+            <div class="page-title">${empty pageTitle ? '后台管理' : pageTitle}</div>
+            <div class="right">
+                <span>管理员：<c:out value="${sessionScope.user.realName}"/></span>
+                <a href="${ctx}/home" class="btn btn-outline btn-sm">返回前台</a>
+                <a href="${ctx}/auth?action=logout" class="btn btn-outline btn-sm">退出</a>
+            </div>
+        </div>
+        <div class="admin-content">

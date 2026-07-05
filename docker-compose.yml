@@ -1,0 +1,44 @@
+# 一条命令启动整套系统：docker compose up --build
+# 会启动两个容器：MySQL 数据库 + Tomcat 应用，数据库数据用数据卷持久化
+services:
+  db:
+    image: mysql:8.0
+    container_name: hotel-db
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-123456}
+      MYSQL_DATABASE: ${DB_NAME:-hotel}
+      TZ: Asia/Shanghai
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${DB_PASSWORD:-123456}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  app:
+    build: .
+    container_name: hotel-app
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # 数据库连接信息通过环境变量注入，区分开发/生产只需改这里
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME:-hotel}
+      DB_USER: root
+      DB_PASSWORD: ${DB_PASSWORD:-123456}
+      # 大模型密钥通过环境变量注入，不写死在代码里
+      AI_API_KEY: ${AI_API_KEY:-}
+      AI_BASE_URL: ${AI_BASE_URL:-https://api.deepseek.com}
+      AI_MODEL: ${AI_MODEL:-deepseek-chat}
+      TZ: Asia/Shanghai
+    ports:
+      - "8080:8080"
+
+volumes:
+  db_data:
