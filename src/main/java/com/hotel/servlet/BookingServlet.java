@@ -53,6 +53,10 @@ public class BookingServlet extends HttpServlet {
 
         int typeId = parseInt(req.getParameter("typeId"), 0);
         RoomType type = roomTypeDao.findById(typeId);
+        if (type == null) {
+            resp.sendRedirect(req.getContextPath() + "/rooms");
+            return;
+        }
         String checkinStr = req.getParameter("checkin");
         String checkoutStr = req.getParameter("checkout");
         String guestName = req.getParameter("guestName");
@@ -62,8 +66,14 @@ public class BookingServlet extends HttpServlet {
         String remark = req.getParameter("remark");
 
         try {
-            LocalDate checkin = LocalDate.parse(checkinStr);
-            LocalDate checkout = LocalDate.parse(checkoutStr);
+            LocalDate checkin;
+            LocalDate checkout;
+            try {
+                checkin = LocalDate.parse(checkinStr);
+                checkout = LocalDate.parse(checkoutStr);
+            } catch (Exception ex) {
+                throw new BookingException("请选择正确的入住和退房日期");
+            }
             Reservation r = bookingService.book(user.getId(), typeId, checkin, checkout,
                     guestName, guestPhone, guestIdCard, guestCount, remark);
             session.setAttribute("flash", "预订成功！订单号 " + r.getOrderNo()

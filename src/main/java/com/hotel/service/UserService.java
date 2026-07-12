@@ -17,6 +17,9 @@ public class UserService {
         if (password == null || password.length() < 6) {
             throw new BookingException("密码至少 6 位");
         }
+        if (phone != null && !phone.trim().isEmpty() && !phone.trim().matches("1\\d{10}")) {
+            throw new BookingException("请填写正确的手机号");
+        }
         username = username.trim();
         if (userDao.existsUsername(username)) {
             throw new BookingException("该用户名已被注册");

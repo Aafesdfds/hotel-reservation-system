@@ -28,16 +28,6 @@ public class AdminRoomTypeServlet extends HttpServlet {
             RoomType t = roomTypeDao.findById(parseInt(req.getParameter("id")));
             req.setAttribute("type", t);
             req.getRequestDispatcher("/WEB-INF/views/admin/type-form.jsp").forward(req, resp);
-        } else if ("delete".equals(action)) {
-            int id = parseInt(req.getParameter("id"));
-            HttpSession session = req.getSession();
-            if (roomTypeDao.countRoomsOfType(id) > 0) {
-                session.setAttribute("flash", "该房型下还有房间，请先删除或转移这些房间");
-            } else {
-                roomTypeDao.delete(id);
-                session.setAttribute("flash", "房型已删除");
-            }
-            resp.sendRedirect(req.getContextPath() + "/admin/types");
         } else {
             req.setAttribute("types", roomTypeDao.findAll());
             passFlash(req);
@@ -48,11 +38,34 @@ public class AdminRoomTypeServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
-        RoomType t = new RoomType();
+        HttpSession session = req.getSession();
+        String action = req.getParameter("action");
         int id = parseInt(req.getParameter("id"));
+
+        if ("delete".equals(action)) {
+            if (roomTypeDao.countRoomsOfType(id) > 0) {
+                session.setAttribute("flash", "该房型下还有房间，请先删除或转移这些房间");
+            } else {
+                roomTypeDao.delete(id);
+                session.setAttribute("flash", "房型已删除");
+            }
+            resp.sendRedirect(req.getContextPath() + "/admin/types");
+            return;
+        }
+
+        BigDecimal price;
+        try {
+            price = new BigDecimal(req.getParameter("price").trim());
+        } catch (Exception e) {
+            session.setAttribute("flash", "请填写正确的房价");
+            resp.sendRedirect(req.getContextPath() + "/admin/types");
+            return;
+        }
+
+        RoomType t = new RoomType();
         t.setId(id);
         t.setName(req.getParameter("name"));
-        t.setPrice(new BigDecimal(req.getParameter("price")));
+        t.setPrice(price);
         t.setCapacity(parseInt(req.getParameter("capacity")));
         t.setBedType(req.getParameter("bedType"));
         t.setArea(parseInt(req.getParameter("area")));
@@ -60,7 +73,6 @@ public class AdminRoomTypeServlet extends HttpServlet {
         t.setDescription(req.getParameter("description"));
         t.setImage(req.getParameter("image"));
 
-        HttpSession session = req.getSession();
         if (id > 0) {
             roomTypeDao.update(t);
             session.setAttribute("flash", "房型已更新");

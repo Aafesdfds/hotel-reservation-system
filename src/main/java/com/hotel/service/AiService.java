@@ -39,11 +39,14 @@ public class AiService {
         int year = LocalDate.now().getYear();
         StatService.MonthlyChart chart = statService.monthlyChart(year);
         sb.append("一、月度经营（").append(year).append("年）\n");
+        int last = chart.labels.size() - 1;
         for (int i = 0; i < chart.labels.size(); i++) {
             sb.append(chart.labels.get(i))
                     .append("：营收 ").append(chart.revenue.get(i)).append(" 元，")
                     .append("订单 ").append(chart.orders.get(i)).append(" 单，")
-                    .append("入住率 ").append(chart.occupancy.get(i)).append("%\n");
+                    .append("入住率 ").append(chart.occupancy.get(i)).append("%")
+                    .append(i == last ? "（本月尚未结束，数据不完整，仅供参考）" : "")
+                    .append("\n");
         }
         sb.append("\n二、各房型累计表现\n");
         for (Object[] row : statService.typeDistribution()) {
@@ -61,10 +64,17 @@ public class AiService {
         // 找营收最高/最低月、平均入住率
         int n = chart.labels.size();
         double occSum = 0;
-        int bestMonth = 0, worstMonth = 0;
-        BigDecimal bestRev = BigDecimal.valueOf(-1), worstRev = null;
         for (int i = 0; i < n; i++) {
             occSum += chart.occupancy.get(i);
+        }
+        double avgOcc = n == 0 ? 0 : occSum / n;
+
+        // 当前月（序列最后一个月）尚未结束，不参与"营收最高/最低月"对比，
+        // 否则会把进行中的当月误判成营收最低月/淡季。
+        int cmp = n > 1 ? n - 1 : n;
+        int bestMonth = 0, worstMonth = 0;
+        BigDecimal bestRev = BigDecimal.valueOf(-1), worstRev = null;
+        for (int i = 0; i < cmp; i++) {
             BigDecimal r = chart.revenue.get(i);
             if (r.compareTo(bestRev) > 0) {
                 bestRev = r;
@@ -75,7 +85,6 @@ public class AiService {
                 worstMonth = i;
             }
         }
-        double avgOcc = n == 0 ? 0 : occSum / n;
 
         List<Object[]> types = statService.typeDistribution();
         String hotType = types.isEmpty() ? "无" : (String) types.get(0)[0];

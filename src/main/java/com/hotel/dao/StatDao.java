@@ -15,10 +15,10 @@ import java.util.Map;
  */
 public class StatDao {
 
-    /** 某年每月的营收，month(1-12) -> 金额 */
+    /** 某年每月的已实现营收（只统计已入住/已退房，不含未来尚未入住的预订），month(1-12) -> 金额 */
     public Map<Integer, BigDecimal> monthlyRevenue(int year) {
         String sql = "SELECT MONTH(checkin_date) m, COALESCE(SUM(total_price),0) rev "
-                + "FROM reservation WHERE YEAR(checkin_date)=? AND status <> 'CANCELLED' "
+                + "FROM reservation WHERE YEAR(checkin_date)=? AND status IN ('CHECKED_IN','CHECKED_OUT') "
                 + "GROUP BY MONTH(checkin_date)";
         Map<Integer, BigDecimal> map = new LinkedHashMap<>();
         try (Connection c = DBUtil.getConnection();
@@ -105,17 +105,5 @@ public class StatDao {
             throw new RuntimeException("统计订单状态失败", e);
         }
         return map;
-    }
-
-    /** 指定状态集合的总营收，例如已入住+已退房=已实现营收 */
-    public BigDecimal revenueByStatuses(String statusInClause) {
-        String sql = "SELECT COALESCE(SUM(total_price),0) FROM reservation WHERE status IN " + statusInClause;
-        try (Connection c = DBUtil.getConnection();
-             PreparedStatement ps = c.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-            return rs.next() ? rs.getBigDecimal(1) : BigDecimal.ZERO;
-        } catch (SQLException e) {
-            throw new RuntimeException("统计营收失败", e);
-        }
     }
 }

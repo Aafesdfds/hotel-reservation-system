@@ -40,12 +40,17 @@ public class ProfileServlet extends HttpServlet {
                 req.setAttribute("error", e.getMessage());
             }
         } else {
-            user.setRealName(req.getParameter("realName"));
-            user.setPhone(req.getParameter("phone"));
-            user.setGender(req.getParameter("gender"));
-            userService.updateProfile(user);
-            session.setAttribute("user", user);
-            req.setAttribute("msg", "资料保存成功");
+            String phone = req.getParameter("phone");
+            if (phone != null && !phone.trim().isEmpty() && !phone.trim().matches("1\\d{10}")) {
+                req.setAttribute("error", "请填写正确的手机号");
+            } else {
+                user.setRealName(req.getParameter("realName"));
+                user.setPhone(phone);
+                user.setGender(req.getParameter("gender"));
+                userService.updateProfile(user);
+                session.setAttribute("user", user);
+                req.setAttribute("msg", "资料保存成功");
+            }
         }
         req.getRequestDispatcher("/WEB-INF/views/user/profile.jsp").forward(req, resp);
     }

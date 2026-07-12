@@ -27,8 +27,12 @@
                 <td>${t.totalRooms}</td>
                 <td style="white-space:nowrap;">
                     <a href="${ctx}/admin/types?action=edit&id=${t.id}" class="btn btn-sm btn-outline">编辑</a>
-                    <a href="${ctx}/admin/types?action=delete&id=${t.id}" class="btn btn-sm btn-danger"
-                       onclick="return confirm('确定删除该房型吗？');">删除</a>
+                    <form method="post" action="${ctx}/admin/types" style="display:inline"
+                          onsubmit="return confirm('确定删除该房型吗？');">
+                        <input type="hidden" name="action" value="delete">
+                        <input type="hidden" name="id" value="${t.id}">
+                        <button type="submit" class="btn btn-sm btn-danger">删除</button>
+                    </form>
                 </td>
             </tr>
         </c:forEach>
