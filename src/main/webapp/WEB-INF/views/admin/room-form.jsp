@@ -4,12 +4,12 @@
 <%@ include file="../common/admin-header.jspf" %>
 
 <div class="panel" style="max-width:640px;">
-    <h3>${empty room ? '新增房间' : '编辑房间'}</h3>
+    <h3>${empty room ? '新增房间（可一次新增多间）' : '编辑房间'}</h3>
     <form action="${ctx}/admin/rooms" method="post" style="margin-top:14px;">
         <c:if test="${not empty room}"><input type="hidden" name="id" value="${room.id}"></c:if>
         <div class="form-grid2">
             <div class="form-row">
-                <label>房间号</label>
+                <label>${empty room ? '起始房间号' : '房间号'}</label>
                 <input type="text" name="roomNo" value="${room.roomNo}" required placeholder="如 301">
             </div>
             <div class="form-row">
@@ -17,6 +17,13 @@
                 <input type="number" name="floor" value="${empty room ? 3 : room.floor}" min="1" required>
             </div>
         </div>
+        <c:if test="${empty room}">
+            <div class="form-row">
+                <label>数量（一次新增几间）</label>
+                <input type="number" name="count" value="1" min="1" max="100" required style="max-width:160px;">
+                <div class="hint">从起始房号连续生成，比如起始 301、数量 5，就一次建好 301、302、303、304、305；已存在的房号会自动跳过。</div>
+            </div>
+        </c:if>
         <div class="form-grid2">
             <div class="form-row">
                 <label>所属房型</label>
