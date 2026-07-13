@@ -3,7 +3,7 @@
 <c:set var="active" value="analysis"/>
 <%@ include file="../common/admin-header.jspf" %>
 
-<div class="panel" style="margin-bottom:18px;">
+<div class="panel no-print" style="margin-bottom:18px;">
     <div class="section-title">
         <h3>AI 经营分析</h3>
         <c:choose>
@@ -13,23 +13,65 @@
     </div>
     <p style="color:var(--muted);font-size:14px;">
         系统会把本酒店的月度入住率、营收、房型成交等真实数据整理后发给大模型（DeepSeek），
-        生成经营分析和房价调整建议。点击下方按钮生成，调用大模型通常需要几秒钟。
+        生成一份经营分析报告。点击下方按钮生成，调用大模型通常需要几秒钟。生成后可以下载成 Word 文档，或打印保存成 PDF。
     </p>
     <form action="${ctx}/admin/analysis" method="post" onsubmit="document.getElementById('genBtn').disabled=true;document.getElementById('genBtn').innerText='正在生成，请稍候…';">
-        <button id="genBtn" class="btn btn-gold">生成经营分析</button>
+        <button id="genBtn" class="btn btn-gold">${empty result ? '生成经营分析报告' : '重新生成报告'}</button>
     </form>
 </div>
 
 <c:if test="${not empty result}">
-    <div class="grid-2-3">
-        <div class="chart-panel">
-            <div class="section-title"><h3>分析结果</h3></div>
-            <div class="ai-output">${result.content}</div>
-            <div class="ai-source">来源：${result.source}</div>
+    <div class="report-actions no-print">
+        <a href="${ctx}/admin/analysis?action=word" class="btn btn-gold">下载 Word 文档</a>
+        <button type="button" class="btn btn-outline" onclick="window.print()">打印 / 导出 PDF</button>
+    </div>
+
+    <div class="report-doc">
+        <div class="report-head">
+            <h1>云栖酒店经营分析报告</h1>
+            <div class="report-meta">报告日期：${reportDate}　|　数据来源：${result.source}</div>
         </div>
-        <div class="chart-panel">
-            <h3>分析所用数据</h3>
-            <div class="data-preview">${result.dataSummary}</div>
+
+        <h2>一、经营数据概况</h2>
+        <p class="report-sub">1. 月度经营（${result.year} 年）</p>
+        <table class="report-table">
+            <thead>
+            <tr><th>月份</th><th>营收（元）</th><th>订单（单）</th><th>入住率</th></tr>
+            </thead>
+            <tbody>
+            <c:forEach var="row" items="${result.monthlyRows}">
+                <tr>
+                    <td>${row[0]}<c:if test="${not empty row[4]}">（${row[4]}）</c:if></td>
+                    <td>${row[1]}</td>
+                    <td>${row[2]}</td>
+                    <td>${row[3]}</td>
+                </tr>
+            </c:forEach>
+            </tbody>
+        </table>
+
+        <p class="report-sub">2. 各房型累计表现</p>
+        <table class="report-table">
+            <thead>
+            <tr><th>房型</th><th>成交（单）</th><th>营收（元）</th></tr>
+            </thead>
+            <tbody>
+            <c:forEach var="row" items="${result.typeDist}">
+                <tr>
+                    <td>${row[0]}</td>
+                    <td>${row[1]}</td>
+                    <td>${row[2]}</td>
+                </tr>
+            </c:forEach>
+            </tbody>
+        </table>
+
+        <h2>二、分析与建议</h2>
+        <div class="report-body">${result.contentHtml}</div>
+
+        <div class="report-foot">
+            <p>——— 本报告由云栖酒店管理系统根据经营数据生成 ———</p>
+            <p class="sign">云栖酒店运营管理部　${reportDate}</p>
         </div>
     </div>
 </c:if>

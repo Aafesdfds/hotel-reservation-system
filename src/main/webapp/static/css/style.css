@@ -317,6 +317,28 @@ h1, h2, h3, h4 { margin: 0 0 .5em; font-weight: 600; color: var(--ink-dark); }
 .ai-source { font-size: 13px; color: var(--muted); margin-top: 12px; }
 .data-preview { background: #f2efe8; border-radius: 8px; padding: 14px 16px; font-size: 13px; color: #556; white-space: pre-wrap; max-height: 220px; overflow: auto; font-family: "Consolas", monospace; }
 
+/* AI 经营分析报告 */
+.report-actions { display: flex; gap: 10px; margin-bottom: 16px; }
+.report-doc { background: #fff; border: 1px solid var(--line); border-radius: 6px; box-shadow: var(--shadow); max-width: 860px; margin: 0 auto; padding: 44px 56px; }
+.report-doc .report-head { text-align: center; border-bottom: 2px solid #333; padding-bottom: 16px; margin-bottom: 24px; }
+.report-doc h1 { font-size: 24px; letter-spacing: 2px; margin: 0 0 10px; }
+.report-doc .report-meta { font-size: 13px; color: var(--muted); }
+.report-doc h2 { font-size: 17px; margin: 26px 0 12px; }
+.report-doc .report-sub { font-weight: 600; margin: 14px 0 8px; color: #333; }
+.report-table { width: 100%; border-collapse: collapse; margin-bottom: 18px; }
+.report-table th, .report-table td { border: 1px solid #ccc; padding: 8px 12px; font-size: 13.5px; text-align: left; }
+.report-table th { background: #f2efe8; font-weight: 600; }
+.report-doc .report-body { line-height: 1.95; font-size: 14.5px; color: #333; }
+.report-doc .report-foot { margin-top: 32px; padding-top: 14px; border-top: 1px dashed #ccc; text-align: center; color: var(--muted); font-size: 13px; }
+.report-doc .report-foot .sign { text-align: right; color: #444; margin-top: 12px; }
+
+/* 打印 / 导出 PDF 时只保留报告本身 */
+@media print {
+    .sidebar, .admin-top, .no-print, .report-actions { display: none !important; }
+    body, .admin-body, .admin-main, .admin-content { background: #fff !important; margin: 0; padding: 0; }
+    .report-doc { box-shadow: none; border: none; max-width: 100%; padding: 0; }
+}
+
 /* 详情页 */
 .detail-grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: 30px; align-items: start; }
 .detail-img { border-radius: 10px; overflow: hidden; box-shadow: var(--shadow); }
