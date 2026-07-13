@@ -4,40 +4,43 @@ import com.hotel.util.AiClient;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
  * AI 经营分析：把真实经营数据整理成文字，发给大模型生成分析和建议。
  * 如果没配密钥或接口调用失败，退回本地按数据规则生成的分析，保证页面永远有结果。
+ * 结果里同时带上月度经营、房型表现这些数据，用来在页面上排成一份经营分析报告。
  */
 public class AiService {
 
     private final StatService statService = new StatService();
 
     public AiResult analyze() {
-        String dataSummary = buildDataSummary();
+        int year = LocalDate.now().getYear();
+        StatService.MonthlyChart chart = statService.monthlyChart(year);
+        List<Object[]> typeDist = statService.typeDistribution();
+
+        String dataSummary = buildDataSummary(year, chart, typeDist);
         String system = "你是一名资深的酒店经营分析顾问。请根据给出的经营数据，用简洁专业的中文做分析并给出可落地的建议，"
                 + "不要空话套话，分点表述，控制在 400 字以内。";
-        String user = "以下是本酒店 2026 年的经营数据：\n\n" + dataSummary
+        String user = "以下是本酒店 " + year + " 年的经营数据：\n\n" + dataSummary
                 + "\n\n请从三个方面分析：1) 入住率与营收趋势；2) 房型结构与热度；3) 存在的问题。"
                 + "然后给出 3 到 5 条具体的经营优化和房价调整建议。";
         try {
             String text = AiClient.chat(system, user);
-            return new AiResult(true, text, "DeepSeek 大模型", dataSummary);
+            return new AiResult(true, text, "DeepSeek 大模型", dataSummary, year, chart, typeDist);
         } catch (Exception e) {
-            String local = localAnalysis();
-            return new AiResult(false,
-                    local,
+            String local = localAnalysis(chart, typeDist);
+            return new AiResult(false, local,
                     "本地数据分析（未调用大模型：" + e.getMessage() + "）",
-                    dataSummary);
+                    dataSummary, year, chart, typeDist);
         }
     }
 
     /** 把统计数据拼成给大模型看的文字 */
-    private String buildDataSummary() {
+    private String buildDataSummary(int year, StatService.MonthlyChart chart, List<Object[]> typeDist) {
         StringBuilder sb = new StringBuilder();
-        int year = LocalDate.now().getYear();
-        StatService.MonthlyChart chart = statService.monthlyChart(year);
         sb.append("一、月度经营（").append(year).append("年）\n");
         int last = chart.labels.size() - 1;
         for (int i = 0; i < chart.labels.size(); i++) {
@@ -49,17 +52,15 @@ public class AiService {
                     .append("\n");
         }
         sb.append("\n二、各房型累计表现\n");
-        for (Object[] row : statService.typeDistribution()) {
+        for (Object[] row : typeDist) {
             sb.append(row[0]).append("：成交 ").append(row[1]).append(" 单，营收 ").append(row[2]).append(" 元\n");
         }
         return sb.toString();
     }
 
     /** 大模型不可用时的本地兜底分析，同样基于真实数据 */
-    private String localAnalysis() {
+    private String localAnalysis(StatService.MonthlyChart chart, List<Object[]> types) {
         StringBuilder sb = new StringBuilder();
-        int year = LocalDate.now().getYear();
-        StatService.MonthlyChart chart = statService.monthlyChart(year);
 
         // 找营收最高/最低月、平均入住率
         int n = chart.labels.size();
@@ -86,7 +87,6 @@ public class AiService {
             }
         }
 
-        List<Object[]> types = statService.typeDistribution();
         String hotType = types.isEmpty() ? "无" : (String) types.get(0)[0];
         String coldType = types.isEmpty() ? "无" : (String) types.get(types.size() - 1)[0];
 
@@ -118,17 +118,57 @@ public class AiService {
         private final String content;
         private final String source;
         private final String dataSummary;
+        private final int year;
+        private final StatService.MonthlyChart chart;
+        private final List<Object[]> typeDist;
 
-        public AiResult(boolean fromAi, String content, String source, String dataSummary) {
+        public AiResult(boolean fromAi, String content, String source, String dataSummary,
+                        int year, StatService.MonthlyChart chart, List<Object[]> typeDist) {
             this.fromAi = fromAi;
             this.content = content;
             this.source = source;
             this.dataSummary = dataSummary;
+            this.year = year;
+            this.chart = chart;
+            this.typeDist = typeDist;
         }
 
         public boolean isFromAi() { return fromAi; }
         public String getContent() { return content; }
         public String getSource() { return source; }
         public String getDataSummary() { return dataSummary; }
+        public int getYear() { return year; }
+        public List<Object[]> getTypeDist() { return typeDist; }
+
+        /**
+         * 月度经营表格的行，报告文档里直接遍历用。
+         * 每行：[月份, 营收, 订单数, 入住率, 是否本月进行中]。
+         */
+        public List<String[]> getMonthlyRows() {
+            List<String[]> rows = new ArrayList<>();
+            if (chart == null) {
+                return rows;
+            }
+            int last = chart.labels.size() - 1;
+            for (int i = 0; i < chart.labels.size(); i++) {
+                rows.add(new String[]{
+                        chart.labels.get(i),
+                        chart.revenue.get(i).toString(),
+                        String.valueOf(chart.orders.get(i)),
+                        chart.occupancy.get(i) + "%",
+                        i == last ? "本月进行中" : ""
+                });
+            }
+            return rows;
+        }
+
+        /** 分析正文转成 HTML：先转义特殊字符，再把换行变成 &lt;br&gt;，报告里按段展示 */
+        public String getContentHtml() {
+            if (content == null) {
+                return "";
+            }
+            String s = content.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
+            return s.replace("\n", "<br/>");
+        }
     }
 }
