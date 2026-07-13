@@ -58,20 +58,27 @@ public class AdminRoomServlet extends HttpServlet {
                 roomService.delete(parseInt(req.getParameter("id"), 0));
                 session.setAttribute("flash", "房间已删除");
             } else {
-                Room r = new Room();
                 int id = parseInt(req.getParameter("id"), 0);
-                r.setId(id);
-                r.setRoomNo(req.getParameter("roomNo"));
-                r.setTypeId(parseInt(req.getParameter("typeId"), 0));
-                r.setFloor(parseInt(req.getParameter("floor"), 1));
-                r.setStatus(req.getParameter("status"));
-                r.setNote(req.getParameter("note"));
                 if (id > 0) {
+                    Room r = new Room();
+                    r.setId(id);
+                    r.setRoomNo(req.getParameter("roomNo"));
+                    r.setTypeId(parseInt(req.getParameter("typeId"), 0));
+                    r.setFloor(parseInt(req.getParameter("floor"), 1));
+                    r.setStatus(req.getParameter("status"));
+                    r.setNote(req.getParameter("note"));
                     roomService.update(r);
                     session.setAttribute("flash", "房间已更新");
                 } else {
-                    roomService.add(r);
-                    session.setAttribute("flash", "房间已新增");
+                    // 新增支持一次建多间：起始房号 + 数量，连续生成
+                    String msg = roomService.batchAdd(
+                            req.getParameter("roomNo"),
+                            parseInt(req.getParameter("count"), 1),
+                            parseInt(req.getParameter("typeId"), 0),
+                            parseInt(req.getParameter("floor"), 1),
+                            req.getParameter("status"),
+                            req.getParameter("note"));
+                    session.setAttribute("flash", msg);
                 }
             }
         } catch (BookingException e) {
